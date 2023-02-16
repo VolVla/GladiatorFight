@@ -10,11 +10,21 @@ namespace GladiatorFights
             ConsoleKey exitButton = ConsoleKey.Enter;
             bool isWork = true;
 
-            while (isWork == true)
+            while (isWork)
             {
-                Battle battle = new Battle();
-                battle.Fight();
-                Console.WriteLine($"Вы хотите выйти из программы?Нажмите {exitButton}.\nДля продолжение работы нажмите любую другую клавишу");
+                BattleArena battleArena = new BattleArena();
+
+                if (battleArena.TryCreativeBattle())
+                {
+                    Console.WriteLine("Для начало сражения нажмите на любую клавишу");
+                    Console.ReadKey();
+                    Console.Clear();
+                    battleArena.Battle();
+                    battleArena.AnnounceWinner();
+
+                }
+
+                Console.WriteLine($"\nВы хотите выйти из программы?Нажмите {exitButton}.\nДля продолжение работы нажмите любую другую клавишу");
 
                 if (Console.ReadKey().Key == exitButton)
                 {
@@ -27,296 +37,226 @@ namespace GladiatorFights
         }
     }
 
-    class Battle
+    class BattleArena
     {
-        private List<Fighter> _fighters = new List<Fighter>();
-        private bool _isBattle;
         private Fighter _firstFighter;
         private Fighter _secondFighter;
+        private List<Fighter> _fighters = new List<Fighter>();
 
-        public Battle()
+        public bool TryCreativeBattle()
         {
-            CreateFighters();
-        }
+            Console.WriteLine("Боец 1");
+            ChooseFighter(out _firstFighter);
+            Console.WriteLine("Боец 2");
+            ChooseFighter(out _secondFighter);
 
-        public void Fight()
-        {
-            ChooseFighters();
-
-            while (_isBattle == true)
+            if (_firstFighter == null || _secondFighter == null)
             {
-                if (_firstFighter.Health > 0 & _secondFighter.Health > 0)
-                {
-                    _firstFighter.ShowInfo();
-                    _secondFighter.ShowInfo();
-                    _firstFighter.Attack(_secondFighter);
-                    _secondFighter.Attack(_firstFighter);
-                    Console.WriteLine("");
-                }
-
-                AnnounceWinner();
+                Console.WriteLine("Ошибка выбора бойца");
+                return false;
+            }
+            else
+            {
+                Console.WriteLine("Бойцы выбраны");
+                return true;
             }
         }
 
-        private void CreateFighters()
+        public BattleArena()
         {
-            _fighters.Add(new Warrior());
-            _fighters.Add(new Archer());
-            _fighters.Add(new Paladin());
-            _fighters.Add(new PlagueDoctor());
-            _fighters.Add(new Barbarian());
+            _fighters.Add(new Archer("Лучник", 100, 100, 40));
+            _fighters.Add(new PlagueDoctor("Чумной Доктор", 100, 100, 15));
+            _fighters.Add(new Paladin("Паладин", 100, 100, 50));
+            _fighters.Add(new Barbarian("Варвар", 90, 100, 30));
+            _fighters.Add(new Mystic("Мистик", 100, 100, 22));
         }
 
-        private void ChooseFighters()
+        public void AnnounceWinner()
         {
-            Console.WriteLine("Выберите бойца:");
-            AssignetFighter(ref _firstFighter);
-            Console.WriteLine("Выберите второго бойца:");
-            AssignetFighter(ref _secondFighter);
-            _isBattle = true;
-        }
-
-        private void AssignetFighter(ref Fighter fighter)
-        {
-            bool isWork = true;
-
-            while (isWork == true)
+            if (_firstFighter.Health <= 0 && _secondFighter.Health <= 0)
             {
-                ShowFighters(_fighters);
-                bool isNumber = int.TryParse(Console.ReadLine(), out int numberFighter);
-
-                if ((isNumber == true && _fighters[numberFighter - 1] == _firstFighter))
-                {
-                    fighter = _fighters[numberFighter - 1].CreateShadow();
-                    isWork = false;
-                }
-                else if (isNumber == true && numberFighter <= _fighters.Count && numberFighter > 0)
-                {
-                    fighter = _fighters[numberFighter - 1];
-                    isWork = false;
-                }
-                else
-                {
-                    Console.WriteLine("\nВы ввели не число или данного бойца нет в списке\n");
-                }
-            }
-        }
-
-        private void AnnounceWinner()
-        {
-            if (_secondFighter.Health <= 0 && _firstFighter.Health <= 0)
-            {
-                Console.WriteLine($"Поздравляю бойцы убили друг друга, никто не победил и все проиграли ");
-                _isBattle = false;
-            }
-            else if (_secondFighter.Health <= 0)
-            {
-                Console.WriteLine($"Победил {_firstFighter.Name} ");
-                _isBattle = false;
+                Console.WriteLine("Поздравляю бойцы убили друг друга, никто не победил и все проиграли");
             }
             else if (_firstFighter.Health <= 0)
             {
-                Console.WriteLine($"Победил {_firstFighter.Name} ");
-                _isBattle = false;
+                Console.WriteLine($"Победил {_secondFighter.Name} !");
+            }
+            else if (_secondFighter.Health <= 0)
+            {
+                Console.WriteLine($"Победил {_firstFighter.Name} !");
             }
         }
 
-        private void ShowFighters(List<Fighter> list)
+        public void Battle()
         {
-            for (int i = 0; i < list.Count; i++)
+            while (_firstFighter.Health > 0 && _secondFighter.Health > 0)
             {
-                Console.Write(i + 1 + " ");
-                list[i].ShowInfo();
+                _firstFighter.ShowStats();
+                _secondFighter.ShowStats();
+                _firstFighter.TakeDamege(_secondFighter.Damage);
+                _secondFighter.TakeDamege(_firstFighter.Damage);
+                _firstFighter.UseSpecialAttack();
+                _secondFighter.UseSpecialAttack(); ;
+            }
+        }
+
+        private void ChooseFighter(out Fighter fighter)
+        {
+            ShowFighters();
+            Console.Write("Введите номер бойца: ");
+            bool isNumber = int.TryParse(Console.ReadLine(), out int inputID);
+
+            if (isNumber == false)
+            {
+                Console.WriteLine("Вы ввели не коректные данные.");
+                fighter = null;
+            }
+            else if (inputID > 0 && inputID - 1 < _fighters.Count)
+            {
+                fighter = _fighters[inputID - 1];
+                _fighters.Remove(fighter);
+                Console.WriteLine("Боец успешно выбран.");
+            }
+            else
+            {
+                Console.WriteLine("Бойца с таким номером отсутствует.");
+                fighter = null;
+            }
+        }
+
+        private void ShowFighters()
+        {
+            Console.WriteLine("Список доступный бойцов");
+
+            for (int i = 0; i < _fighters.Count; i++)
+            {
+                Console.Write(i + 1);
+                _fighters[i].ShowStats();
             }
         }
     }
 
     class Fighter
     {
-        public int Armor { get; private set; }
-        public int Health { get; private set; }
-        public int Damage { get; private set; }
-        public string Name { get; private set; }
-        public int AttackSpeed { get; protected set; }
+        public string Name { get; protected set; }
+        public float Health { get; protected set; }
+        public float Armor { get; protected set; }
+        public float Damage { get; protected set; }
 
-        public Fighter(string name, int health, int armor, int damage, int attackSpeed)
+        public Fighter(string name, int health, int damage, int armor)
         {
             Name = name;
             Health = health;
-            Armor = armor;
             Damage = damage;
-            AttackSpeed = attackSpeed;
+            Armor = armor;
         }
 
-        public virtual void Attack(Fighter fighter)
+        public void TakeDamege(float damageFighter)
         {
-            fighter.TakeDamage(Damage);
-        }
+            float finalDamage = 0;
+            int absorbedArmorFactor = 100;
 
-        public virtual void TakeDamage(int Damage)
-        {
-            if (Armor >= Damage)
+            if (Armor == 0)
             {
-                DebaffArmor(Damage);
+                Health -= damageFighter;
             }
             else
             {
-                Health -= Damage - Armor;
+                finalDamage = damageFighter / absorbedArmorFactor * Armor;
+                Armor -= finalDamage;
+                Health -= finalDamage;
+            }
+
+            Console.WriteLine($"{Name} нанес {finalDamage} урона");
+        }
+
+        public void ShowStats()
+        {
+            Console.WriteLine($"{Name}. Здоровье: {Health}. Броня: {Armor} Урон {Damage}");
+        }
+
+        public void UseSpecialAttack()
+        {
+            Random random = new Random();
+            int rangeMaximalNumbers = 100;
+            int chanceUsingAbility = random.Next(rangeMaximalNumbers);
+            int chanceAbility = 20;
+
+            if (chanceUsingAbility < chanceAbility)
+            {
+                UsePower();
             }
         }
 
-        public virtual Fighter CreateShadow()
-        {
-            return new Fighter(Name, Health, Armor, Damage, AttackSpeed);
-        }
-
-        public void BaffArmor(int value)
-        {
-            Armor += value;
-        }
-
-        public void DebaffArmor(int value)
-        {
-            Armor -= value;
-        }
-
-        public void BaffHealth(int value)
-        {
-            Health += value;
-        }
-
-        public void DebaffHealth(int value)
-        {
-            Health -= value;
-        }
-
-        public void BaffDamage(int value)
-        {
-            Damage += value;
-        }
-
-        public void ShowInfo()
-        {
-            Console.WriteLine($"Имя {Name} HP - {Health}  Damage - {Damage} Armor - {Armor}");
-        }
+        protected virtual void UsePower() { }
     }
 
-    class Warrior : Fighter
+    class Mystic : Fighter
     {
-        private int _valueBuffDamage = 10;
-        private int _valueDebaffArmor = 5;
+        private int _healthBuff = 5;
 
-        public Warrior() : base("Jon", 200, 20, 40, 1)
-        {
-        }
+        public Mystic(string name, int health, int armor, int damage) : base(name, health, damage, armor) { }
 
-        public override Fighter CreateShadow()
+        protected override void UsePower()
         {
-            return base.CreateShadow();
-        }
-
-        public override void TakeDamage(int damage)
-        {
-            BaffDamage(_valueBuffDamage);
-            DebaffArmor(_valueDebaffArmor);
-            Console.WriteLine($"Воин крикнул и повысил урон на {_valueBuffDamage} и уменьшил броню {_valueDebaffArmor} ");
-            base.TakeDamage(damage);
+            Console.WriteLine($"{Name} использует мистическую силу. Здоровье увеличилось");
+            Health += _healthBuff;
         }
     }
 
     class Archer : Fighter
     {
-        private int _damageBaff = 20;
-        private int _debaffHealth = 2;
+        private int _damageBuff = 55;
+        private int _armorBuff = 45;
 
-        public Archer() : base("Lyk", 160, 15, 30, 2) { }
+        public Archer(string name, int health, int armor, int damage) : base(name, health, damage, armor) { }
 
-        public override Fighter CreateShadow()
+        protected override void UsePower()
         {
-            return base.CreateShadow();
-        }
-
-        public override void TakeDamage(int Damage)
-        {
-            Console.WriteLine($"{Name} использует Натянутый лук Урон увеличился на {_damageBaff} и уменьшил здоровья на {_debaffHealth}");
-            base.TakeDamage(_damageBaff);
-            DebaffHealth(_debaffHealth);
+            Console.WriteLine($"{Name} использует Натянутый лук.Урон увеличился {_damageBuff} и  броня стала крепче на {_armorBuff} увелечены");
+            Damage += _damageBuff;
+            Armor += _armorBuff;
         }
     }
 
     class Paladin : Fighter
     {
-        private int _valueBuffArmor = 2;
+        private int _healthBuff = 60;
 
-        public Paladin() : base("Boris", 300, 25, 50, 3) { }
+        public Paladin(string name, int health, int armor, int damage) : base(name, health, damage, armor) { }
 
-        public override Fighter CreateShadow()
+        protected override void UsePower()
         {
-            return base.CreateShadow();
-        }
-
-        public override void TakeDamage(int Damage)
-        {
-            BaffArmor((Damage - _valueBuffArmor) / 2);
-            base.TakeDamage(Damage);
-            Console.WriteLine("Паладин памолился и спомнил что его броня стала крепче");
-        }
-    }
-
-    class PlagueDoctor : Fighter
-    {
-        private int _magicPoint;
-        private int _healUp;
-        private int _health = 5;
-
-        public PlagueDoctor() : base("Sanek", 250, 30, 40, 2)
-        {
-            _magicPoint = 10;
-        }
-
-        public override Fighter CreateShadow()
-        {
-            return base.CreateShadow();
-        }
-
-        public override void TakeDamage(int Damage)
-        {
-            RegenerateHealth();
-            base.TakeDamage(Damage);
-            Console.WriteLine($"Чумной доктор воспользовался маной, осталось {_magicPoint} маны и отхилил на {_healUp}");
-        }
-
-        private void RegenerateHealth()
-        {
-            if (_magicPoint > 0)
-            {
-                _healUp = Damage / _health;
-                BaffHealth(_healUp);
-                _magicPoint--;
-            }
+            Console.WriteLine($"{Name} ипользовал молитву. Здоровье увелечено");
+            Health += _healthBuff;
         }
     }
 
     class Barbarian : Fighter
     {
-        private int _damageKick = 5;
-        private int _doubleDamage;
+        private int _damageBuff = 60;
+        private int _armorBuff = 50;
 
-        public Barbarian() : base("Dem", 160, 10, 60, 4)
+        public Barbarian(string name, int health, int armor, int damage) : base(name, health, damage, armor) { }
+
+        protected override void UsePower()
         {
-            _doubleDamage = _damageKick * AttackSpeed;
+            Console.WriteLine($"{Name} начал позировать своими мышцами, урон увеличился, но броня уменьшилась");
+            Armor -= _armorBuff;
+            Damage += _damageBuff;
         }
+    }
 
-        public override Fighter CreateShadow()
-        {
-            return base.CreateShadow();
-        }
+    class PlagueDoctor : Fighter
+    {
+        private int _damageBuff = 20;
 
-        public override void TakeDamage(int Damage)
+        public PlagueDoctor(string name, int health, int armor, int damage) : base(name, health, damage, armor) { }
+
+        protected override void UsePower()
         {
-            base.TakeDamage(_doubleDamage);
-            Console.WriteLine($"{Name} пнул  в лицо {_doubleDamage} перехватил инициативу и ударил ещё раз обычным ударом {Damage}");
-            base.TakeDamage(Damage);
+            Console.WriteLine($"{Name} ипользовал чумной зелья, увеличивая урон атаки");
+            Damage += _damageBuff;
         }
     }
 }
