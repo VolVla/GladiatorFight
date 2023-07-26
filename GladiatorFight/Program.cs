@@ -21,7 +21,6 @@ namespace GladiatorFights
                     Console.Clear();
                     battleArena.Battle();
                     battleArena.AnnounceWinner();
-
                 }
 
                 Console.WriteLine($"\nВы хотите выйти из программы?Нажмите {exitButton}.\nДля продолжение работы нажмите любую другую клавишу");
@@ -42,25 +41,6 @@ namespace GladiatorFights
         private Fighter _firstFighter;
         private Fighter _secondFighter;
         private List<Fighter> _fighters = new List<Fighter>();
-
-        public bool TryCreativeBattle()
-        {
-            Console.WriteLine("Боец 1");
-            ChooseFighter(out _firstFighter);
-            Console.WriteLine("Боец 2");
-            ChooseFighter(out _secondFighter);
-
-            if (_firstFighter == null || _secondFighter == null)
-            {
-                Console.WriteLine("Ошибка выбора бойца");
-                return false;
-            }
-            else
-            {
-                Console.WriteLine("Бойцы выбраны");
-                return true;
-            }
-        }
 
         public BattleArena()
         {
@@ -91,12 +71,27 @@ namespace GladiatorFights
         {
             while (_firstFighter.Health > 0 && _secondFighter.Health > 0)
             {
-                _firstFighter.ShowStats();
-                _secondFighter.ShowStats();
-                _firstFighter.TakeDamege(_secondFighter.Damage);
-                _secondFighter.TakeDamege(_firstFighter.Damage);
-                _firstFighter.UseSpecialAttack();
-                _secondFighter.UseSpecialAttack(); ;
+                _firstFighter.CauseDamage(_secondFighter);
+                _secondFighter.CauseDamage(_firstFighter);
+            }
+        }
+
+        public bool TryCreativeBattle()
+        {
+            Console.WriteLine("Боец 1");
+            ChooseFighter(out _firstFighter);
+            Console.WriteLine("Боец 2");
+            ChooseFighter(out _secondFighter);
+
+            if (_firstFighter == null || _secondFighter == null)
+            {
+                Console.WriteLine("Ошибка выбора бойца");
+                return false;
+            }
+            else
+            {
+                Console.WriteLine("Бойцы выбраны");
+                return true;
             }
         }
 
@@ -114,7 +109,6 @@ namespace GladiatorFights
             else if (inputID > 0 && inputID - 1 < _fighters.Count)
             {
                 fighter = _fighters[inputID - 1];
-                _fighters.Remove(fighter);
                 Console.WriteLine("Боец успешно выбран.");
             }
             else
@@ -134,15 +128,11 @@ namespace GladiatorFights
                 _fighters[i].ShowStats();
             }
         }
+        
     }
 
     class Fighter
     {
-        public string Name { get; protected set; }
-        public float Health { get; protected set; }
-        public float Armor { get; protected set; }
-        public float Damage { get; protected set; }
-
         public Fighter(string name, int health, int damage, int armor)
         {
             Name = name;
@@ -151,7 +141,23 @@ namespace GladiatorFights
             Armor = armor;
         }
 
-        public void TakeDamege(float damageFighter)
+        public string Name { get; protected set; }
+        public float Health { get; protected set; }
+        public float Armor { get; protected set; }
+        public float Damage { get; protected set; }
+
+        public void ShowStats()
+        {
+            Console.WriteLine($"{Name}. Здоровье: {Health}. Броня: {Armor} Урон {Damage}");
+        }
+
+        public virtual void CauseDamage(Fighter fighter)
+        {
+            fighter.TakeDamage(Damage); 
+            ShowStats();
+        }
+
+        protected virtual void TakeDamage(float damageFighter)
         {
             float finalDamage = 0;
             int absorbedArmorFactor = 100;
@@ -170,25 +176,18 @@ namespace GladiatorFights
             Console.WriteLine($"{Name} нанес {finalDamage} урона");
         }
 
-        public void ShowStats()
+        protected virtual void UsePower() 
         {
-            Console.WriteLine($"{Name}. Здоровье: {Health}. Броня: {Armor} Урон {Damage}");
-        }
-
-        public void UseSpecialAttack()
-        {
+            int rangeMaximalNumbers = 80;
+            int chanceAbility = 50;
             Random random = new Random();
-            int rangeMaximalNumbers = 100;
             int chanceUsingAbility = random.Next(rangeMaximalNumbers);
-            int chanceAbility = 20;
 
             if (chanceUsingAbility < chanceAbility)
             {
                 UsePower();
             }
         }
-
-        protected virtual void UsePower() { }
     }
 
     class Mystic : Fighter
@@ -196,6 +195,12 @@ namespace GladiatorFights
         private int _healthBuff = 5;
 
         public Mystic(string name, int health, int armor, int damage) : base(name, health, damage, armor) { }
+
+        protected override void TakeDamage(float damage)
+        {
+            base.TakeDamage(damage);
+            base.UsePower();
+        }
 
         protected override void UsePower()
         {
@@ -206,10 +211,16 @@ namespace GladiatorFights
 
     class Archer : Fighter
     {
-        private int _damageBuff = 55;
-        private int _armorBuff = 45;
+        private int _damageBuff = 5;
+        private int _armorBuff = 5;
 
         public Archer(string name, int health, int armor, int damage) : base(name, health, damage, armor) { }
+
+        protected override void TakeDamage(float damage)
+        {
+            base.TakeDamage(damage);
+            base.UsePower();
+        }
 
         protected override void UsePower()
         {
@@ -221,9 +232,15 @@ namespace GladiatorFights
 
     class Paladin : Fighter
     {
-        private int _healthBuff = 60;
+        private int _healthBuff = 10;
 
         public Paladin(string name, int health, int armor, int damage) : base(name, health, damage, armor) { }
+
+        protected override void TakeDamage(float damage)
+        {
+            base.TakeDamage(damage);
+            base.UsePower();
+        }
 
         protected override void UsePower()
         {
@@ -234,10 +251,16 @@ namespace GladiatorFights
 
     class Barbarian : Fighter
     {
-        private int _damageBuff = 60;
-        private int _armorBuff = 50;
+        private int _damageBuff = 30;
+        private int _armorBuff = 20;
 
         public Barbarian(string name, int health, int armor, int damage) : base(name, health, damage, armor) { }
+
+        protected override void TakeDamage(float damage)
+        {
+            base.TakeDamage(damage);
+            base.UsePower();
+        }
 
         protected override void UsePower()
         {
@@ -252,6 +275,12 @@ namespace GladiatorFights
         private int _damageBuff = 20;
 
         public PlagueDoctor(string name, int health, int armor, int damage) : base(name, health, damage, armor) { }
+
+        protected override void TakeDamage(float damage)
+        {
+            base.TakeDamage(damage);
+            base.UsePower();
+        }
 
         protected override void UsePower()
         {
