@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Design.Serialization;
-using System.Diagnostics;
+
 
 namespace GladiatorFights
 {
@@ -40,9 +39,10 @@ namespace GladiatorFights
 
     class BattleArena
     {
-        private Fighter _firstFighter;
-        private Fighter _secondFighter;
+        private int _firstFighter = 0;
+        private int _secondFighter = 1;
         private List<Fighter> _fighters = new List<Fighter>();
+        private List<Fighter> _fightFighters = new List<Fighter>();
 
         public BattleArena()
         {
@@ -55,44 +55,37 @@ namespace GladiatorFights
 
         public void AnnounceWinner()
         {
-            if (_firstFighter.Health <= 0 && _secondFighter.Health <= 0)
+            if (_fightFighters[_firstFighter].Health <= 0)
+            {
+                Console.WriteLine($"Победил {_fightFighters[_secondFighter].Name} !");
+            }
+            else if (_fightFighters[_secondFighter].Health <= 0)
+            {
+                Console.WriteLine($"Победил {_fightFighters[_firstFighter].Name} !");
+            }
+            else if (_fightFighters[_firstFighter].Health <= 0 && _fightFighters[_secondFighter].Health <= 0)
             {
                 Console.WriteLine("Поздравляю бойцы убили друг друга, никто не победил и все проиграли");
-            }
-            else if (_firstFighter.Health <= 0)
-            {
-                Console.WriteLine($"Победил {_secondFighter.Name} !");
-            }
-            else if (_secondFighter.Health <= 0)
-            {
-                Console.WriteLine($"Победил {_firstFighter.Name} !");
             }
         }
 
         public void Battle()
         {
-            while (_firstFighter.Health > 0 && _secondFighter.Health > 0)
+            while (_fightFighters[_firstFighter].Health > 0 && _fightFighters[_secondFighter].Health > 0)
             {
-                _firstFighter.CauseDamage(_secondFighter);
-                _secondFighter.CauseDamage(_firstFighter);
+                _fightFighters[_firstFighter].CauseDamage(_fightFighters[_secondFighter]);
+                _fightFighters[_secondFighter].CauseDamage(_fightFighters[_firstFighter]);
             }
         }
 
         public bool TryCreativeBattle()
         {
-            int idFighter = 0;
-
             Console.WriteLine("Боец 1");
-           _firstFighter = ChooseFighter( _firstFighter,ref idFighter);
+            ChooseFighter();
             Console.WriteLine("Боец 2");
-           _secondFighter = ChooseFighter( _secondFighter, ref idFighter);
+            ChooseFighter();
 
-            if(_firstFighter == _secondFighter)
-            {
-                _secondFighter = CreateFantomFighter(idFighter, _firstFighter );
-            }
-
-            if (_firstFighter == null || _secondFighter == null)
+            if (_fightFighters[_firstFighter] == null || _fightFighters[_secondFighter] == null)
             {
                 Console.WriteLine("Ошибка выбора бойца");
                 return false;
@@ -104,34 +97,7 @@ namespace GladiatorFights
             }
         }
 
-        private Fighter CreateFantomFighter(int inputID,Fighter fighter)
-        {
-            if (_firstFighter == fighter)
-            {
-                switch (inputID-1) 
-                {
-                    case 0:
-                            fighter = new Archer(_fighters[inputID - 1].Name + " 2 такой же боец", _fighters[inputID - 1].Health, _fighters[inputID - 1].Armor, _fighters[inputID - 1].Damage);
-                    break;
-                    case 1:
-                            fighter = new PlagueDoctor(_fighters[inputID-1].Name + " 2 такой же боец", _fighters[inputID-1].Health, _fighters[inputID-1].Armor, _fighters[inputID-1].Damage);
-                    break;
-                    case 2:
-                            fighter = new Paladin(_fighters[inputID].Name + " 2 такой же боец", _fighters[inputID].Health, _fighters[inputID].Damage, _fighters[inputID].Armor);
-                    break;
-                    case 3:
-                            fighter = new Barbarian(_fighters[inputID].Name + " 2 такой же боец", _fighters[inputID].Health, _fighters[inputID].Damage, _fighters[inputID].Armor);
-                    break;
-                    case 4:
-                            fighter =new Mystic(_fighters[inputID].Name + " 2 такой же боец", _fighters[inputID].Health, _fighters[inputID].Damage, _fighters[inputID].Armor);
-                    break;
-                }
-            }
-
-            return fighter;
-        }
-
-        private Fighter ChooseFighter(Fighter fighter, ref int idFighter)
+        private void ChooseFighter()
         {
             ShowFighters();
             Console.Write("Введите номер бойца: ");
@@ -140,16 +106,12 @@ namespace GladiatorFights
             if (isNumber == false)
             {
                 Console.WriteLine("Вы ввели не коректные данные.");
-                fighter = null;
             }
             else if (inputID > 0 && inputID - 1 < _fighters.Count)
             {
                 Console.WriteLine("Боец успешно выбран.");
-                fighter = _fighters[inputID - 1];
+                _fightFighters.Add(_fighters[inputID - 1].Clone());
             }
-
-            idFighter = inputID;
-            return fighter;
         }
 
         private void ShowFighters()
@@ -164,7 +126,7 @@ namespace GladiatorFights
         }
     }
 
-    class Fighter
+    abstract class Fighter 
     {
         public Fighter(string name, float health, float damage, float armor)
         {
@@ -186,11 +148,13 @@ namespace GladiatorFights
 
         public void CauseDamage(Fighter fighter)
         {
-            Console.WriteLine($"{fighter.Name} атаковал {Name}");
-            TakeDamage(fighter.Damage);
-            fighter.UsePower();
+            Console.WriteLine($"{Name} атаковал {fighter.Name}");
+            fighter.TakeDamage(Damage);
+            UsePower();
             ShowStats();
         }
+
+        public abstract Fighter Clone();
 
         protected virtual void TakeDamage(float damageFighter)
         {
@@ -199,6 +163,7 @@ namespace GladiatorFights
 
             if (Armor == 0)
             {
+                finalDamage = damageFighter;
                 Health -= damageFighter;
             }
             else
@@ -211,10 +176,10 @@ namespace GladiatorFights
             Console.WriteLine($"{Name} получил {finalDamage} урона");
         }
 
-        protected virtual void UsePower() 
+        protected virtual void UsePower()
         {
             int rangeMaximalNumbers = 80;
-            int chanceAbility = 20;
+            int chanceAbility = 50;
             Random random = new Random();
             int chanceUsingAbility = random.Next(rangeMaximalNumbers);
 
@@ -230,6 +195,11 @@ namespace GladiatorFights
         private int _healthBuff = 5;
 
         public Mystic(string name, float health, float armor, float damage) : base(name, health, damage, armor) { }
+
+        public override Fighter Clone()
+        {
+            return new Mystic(Name,Health,Armor ,Damage);
+        }
 
         protected override void TakeDamage(float damage)
         {
@@ -247,8 +217,15 @@ namespace GladiatorFights
     {
         private int _damageBuff = 5;
         private int _armorBuff = 5;
+        private int _coolDown = 3;
+        private int _valueCoolDown = 1;
 
         public Archer(string name, float health, float armor, float damage) : base(name, health, damage, armor) { }
+
+        public override Fighter Clone()
+        {
+            return new Archer(Name, Health, Armor, Damage);
+        }
 
         protected override void TakeDamage(float damage)
         {
@@ -257,9 +234,17 @@ namespace GladiatorFights
 
         protected override void UsePower()
         {
-            Console.WriteLine($"{Name} использует Натянутый лук.Урон увеличился {_damageBuff} и  броня стала крепче на {_armorBuff} увелечены");
-            Damage += _damageBuff;
-            Armor += _armorBuff;
+            if (_valueCoolDown == _coolDown)
+            {
+                Console.WriteLine($"{Name} использует Натянутый лук.Урон увеличился {_damageBuff} и  броня стала крепче на {_armorBuff} увелечены");
+                Damage += _damageBuff;
+                Armor += _armorBuff;
+                _valueCoolDown = 0;
+            }
+            else
+            {
+                _valueCoolDown++;
+            }
         }
     }
 
@@ -268,6 +253,11 @@ namespace GladiatorFights
         private int _healthBuff = 10;
 
         public Paladin(string name, float health, float armor, float damage) : base(name, health, damage, armor) { }
+
+        public override Fighter Clone()
+        {
+            return new Paladin(Name, Health, Armor, Damage);
+        }
 
         protected override void TakeDamage(float damage)
         {
@@ -278,15 +268,28 @@ namespace GladiatorFights
         {
             Console.WriteLine($"{Name} ипользовал молитву. Здоровье увелечено");
             Health += _healthBuff;
-        }
+        } 
     }
 
     class Barbarian : Fighter
     {
         private int _damageBuff = 30;
         private int _armorBuff = 20;
+        private int _coolDown = 3;
+        private int _valueCoolDown = 3;
+        private float _baseDamage;
+        private float _baseArmor;
 
-        public Barbarian(string name, float health, float armor, float damage) : base(name, health, damage, armor) { }
+        public Barbarian(string name, float health, float armor, float damage) : base(name, health, damage, armor)
+        {
+            _baseDamage = damage;
+            _baseArmor = armor;
+        }
+
+        public override Fighter Clone()
+        {
+            return new Barbarian(Name, Health, Armor, Damage);
+        }
 
         protected override void TakeDamage(float damage)
         {
@@ -297,16 +300,33 @@ namespace GladiatorFights
         protected override void UsePower()
         {
             Console.WriteLine($"{Name} начал позировать своими мышцами, урон увеличился, но броня уменьшилась");
-            Armor -= _armorBuff;
-            Damage += _damageBuff;
+
+            if (_coolDown == _valueCoolDown)
+            {
+                Armor = _baseArmor - _armorBuff;
+                Damage = _baseDamage + _damageBuff;
+                _coolDown = 0;
+            }
+            else 
+            {
+                Armor = _baseArmor;
+                Damage = _baseDamage;
+                _coolDown++; 
+            }
         }
     }
 
     class PlagueDoctor : Fighter
     {
-        private int _damageBuff = 20;
-
+        private int _mana = 2;
+        private Random _random = new Random();
+        private float absorbedArmorFactor = 2;
         public PlagueDoctor(string name, float health, float armor, float damage) : base(name, health, damage, armor) { }
+
+        public override Fighter Clone()
+        {
+            return new PlagueDoctor(Name, Health, Armor, Damage);
+        }
 
         protected override void TakeDamage(float damage)
         {
@@ -315,8 +335,33 @@ namespace GladiatorFights
 
         protected override void UsePower()
         {
-            Console.WriteLine($"{Name} ипользовал чумной зелья, увеличивая урон атаки");
-            Damage += _damageBuff;
+            Console.WriteLine($"{Name} ипользовал случайное зелье");
+
+            if (_mana > 0)
+            {
+                switch (_random.Next(0, 2))
+                {
+                    case 0:
+                        if (Armor != 0 && Health != 0)
+                        {
+                            Console.WriteLine("Выпил зелье которая обменяла броню и здоровье");
+                            float _temporarValue = Armor;
+                            Health = Armor;
+                            Armor = _temporarValue;
+                        }
+                        break;
+                    case 1:
+                        if (Armor != 0)
+                        {
+                            Console.WriteLine("Выпил зелье которая уничтожела броню но увеличила наносимый урон");
+                            Damage += Armor / absorbedArmorFactor;
+                            Armor = 0;
+                        }
+                        break;
+                }
+
+                _mana--;
+            }
         }
     }
 }
