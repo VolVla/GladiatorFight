@@ -327,11 +327,6 @@ namespace GladiatorFights
             return new PlagueDoctor(Name, Health, Armor, Damage);
         }
 
-        protected override void TakeDamage(float damage)
-        {
-            base.TakeDamage(damage);
-        }
-
         protected override void UsePower()
         {
             Console.WriteLine($"{Name} ипользовал случайное зелье");
