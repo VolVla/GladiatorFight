@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 
-
 namespace GladiatorFights
 {
     internal class Program
@@ -90,7 +89,7 @@ namespace GladiatorFights
                 Console.WriteLine("Ошибка выбора бойца");
                 return false;
             }
-            else 
+            else
             {
                 Console.WriteLine("Бойцы выбраны");
                 return true;
@@ -126,7 +125,7 @@ namespace GladiatorFights
         }
     }
 
-    abstract class Fighter 
+    abstract class Fighter
     {
         public Fighter(string name, float health, float damage, float armor)
         {
@@ -198,7 +197,7 @@ namespace GladiatorFights
 
         public override Fighter Clone()
         {
-            return new Mystic(Name,Health,Armor ,Damage);
+            return new Mystic(Name, Health, Armor, Damage);
         }
 
         protected override void TakeDamage(float damage)
@@ -268,7 +267,7 @@ namespace GladiatorFights
         {
             Console.WriteLine($"{Name} ипользовал молитву. Здоровье увелечено");
             Health += _healthBuff;
-        } 
+        }
     }
 
     class Barbarian : Fighter
@@ -307,11 +306,11 @@ namespace GladiatorFights
                 Damage = _baseDamage + _damageBuff;
                 _coolDown = 0;
             }
-            else 
+            else
             {
                 Armor = _baseArmor;
                 Damage = _baseDamage;
-                _coolDown++; 
+                _coolDown++;
             }
         }
     }
