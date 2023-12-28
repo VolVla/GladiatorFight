@@ -14,7 +14,7 @@ namespace GladiatorFights
             {
                 BattleArena battleArena = new BattleArena();
 
-                if (battleArena.TryCreativeBattle())
+                if (battleArena.TryCreateBattle())
                 {
                     Console.WriteLine("Для начало сражения нажмите на любую клавишу");
                     Console.ReadKey();
@@ -38,10 +38,9 @@ namespace GladiatorFights
 
     class BattleArena
     {
-        private int _firstFighter = 0;
-        private int _secondFighter = 1;
+        private Fighter _firstFighter;
+        private Fighter _secondFighter;
         private List<Fighter> _fighters = new List<Fighter>();
-        private List<Fighter> _fightFighters = new List<Fighter>();
 
         public BattleArena()
         {
@@ -54,15 +53,15 @@ namespace GladiatorFights
 
         public void AnnounceWinner()
         {
-            if (_fightFighters[_firstFighter].Health <= 0)
+            if (_firstFighter.Health <= 0)
             {
-                Console.WriteLine($"Победил {_fightFighters[_secondFighter].Name} !");
+                Console.WriteLine($"Победил {_secondFighter.Name} !");
             }
-            else if (_fightFighters[_secondFighter].Health <= 0)
+            else if (_secondFighter.Health <= 0)
             {
-                Console.WriteLine($"Победил {_fightFighters[_firstFighter].Name} !");
+                Console.WriteLine($"Победил {_firstFighter.Name} !");
             }
-            else if (_fightFighters[_firstFighter].Health <= 0 && _fightFighters[_secondFighter].Health <= 0)
+            else if (_firstFighter.Health <= 0 && _secondFighter.Health <= 0)
             {
                 Console.WriteLine("Поздравляю бойцы убили друг друга, никто не победил и все проиграли");
             }
@@ -70,21 +69,21 @@ namespace GladiatorFights
 
         public void Battle()
         {
-            while (_fightFighters[_firstFighter].Health > 0 && _fightFighters[_secondFighter].Health > 0)
+            while (_firstFighter.Health > 0 && _secondFighter.Health > 0)
             {
-                _fightFighters[_firstFighter].CauseDamage(_fightFighters[_secondFighter]);
-                _fightFighters[_secondFighter].CauseDamage(_fightFighters[_firstFighter]);
+                _firstFighter.CauseDamage(_secondFighter);
+                _secondFighter.CauseDamage(_firstFighter);
             }
         }
 
-        public bool TryCreativeBattle()
+        public bool TryCreateBattle()
         {
             Console.WriteLine("Боец 1");
-            ChooseFighter();
+            _firstFighter = ChooseFighter();
             Console.WriteLine("Боец 2");
-            ChooseFighter();
+            _secondFighter = ChooseFighter();
 
-            if (_fightFighters[_firstFighter] == null || _fightFighters[_secondFighter] == null)
+            if (_firstFighter == null || _secondFighter == null)
             {
                 Console.WriteLine("Ошибка выбора бойца");
                 return false;
@@ -96,8 +95,9 @@ namespace GladiatorFights
             }
         }
 
-        private void ChooseFighter()
+        private Fighter ChooseFighter()
         {
+            Fighter fighter = null;
             ShowFighters();
             Console.Write("Введите номер бойца: ");
             bool isNumber = int.TryParse(Console.ReadLine(), out int inputID);
@@ -109,8 +109,10 @@ namespace GladiatorFights
             else if (inputID > 0 && inputID - 1 < _fighters.Count)
             {
                 Console.WriteLine("Боец успешно выбран.");
-                _fightFighters.Add(_fighters[inputID - 1].Clone());
+                fighter = _fighters[inputID - 1].Clone();
             }
+
+            return fighter;
         }
 
         private void ShowFighters()
@@ -158,16 +160,15 @@ namespace GladiatorFights
         protected virtual void TakeDamage(float damageFighter)
         {
             float finalDamage = 0;
-            float absorbedArmorFactor = 100;
 
-            if (Armor == 0)
+            if (Armor <= 0)
             {
                 finalDamage = damageFighter;
                 Health -= damageFighter;
             }
             else
             {
-                finalDamage = damageFighter / absorbedArmorFactor * Armor;
+                finalDamage = damageFighter / Armor;
                 Armor -= finalDamage;
                 Health -= finalDamage;
             }
@@ -192,6 +193,7 @@ namespace GladiatorFights
     class Mystic : Fighter
     {
         private int _healthBuff = 5;
+        private int _coinsUsePower = 2;
 
         public Mystic(string name, float health, float armor, float damage) : base(name, health, damage, armor) { }
 
@@ -207,8 +209,12 @@ namespace GladiatorFights
 
         protected override void UsePower()
         {
-            Console.WriteLine($"{Name} использует мистическую силу. Здоровье увеличилось");
-            Health += _healthBuff;
+            if (_coinsUsePower > 0)
+            {
+                Console.WriteLine($"{Name} использует мистическую силу. Здоровье увеличилось");
+                Health += _healthBuff;
+                _coinsUsePower--;
+            }
         }
     }
 
@@ -318,8 +324,9 @@ namespace GladiatorFights
     class PlagueDoctor : Fighter
     {
         private int _mana = 2;
-        private Random _random = new Random();
-        private float absorbedArmorFactor = 2;
+        private float _health = 20;
+        private float _absorbedArmorFactor = 2;
+
         public PlagueDoctor(string name, float health, float armor, float damage) : base(name, health, damage, armor) { }
 
         public override Fighter Clone()
@@ -333,29 +340,22 @@ namespace GladiatorFights
 
             if (_mana > 0)
             {
-                switch (_random.Next(0, 2))
+                if (Armor != 0 && Health < _health)
                 {
-                    case 0:
-                        if (Armor != 0 && Health != 0)
-                        {
-                            Console.WriteLine("Выпил зелье которая обменяла броню и здоровье");
-                            float _temporarValue = Armor;
-                            Health = Armor;
-                            Armor = _temporarValue;
-                        }
-                        break;
-                    case 1:
-                        if (Armor != 0)
-                        {
-                            Console.WriteLine("Выпил зелье которая уничтожела броню но увеличила наносимый урон");
-                            Damage += Armor / absorbedArmorFactor;
-                            Armor = 0;
-                        }
-                        break;
+                    Console.WriteLine("Выпил зелье которая обменяла броню и здоровье");
+                    float _temporarValue = Armor;
+                    Health = Armor;
+                    Armor = _temporarValue;
                 }
-
-                _mana--;
+                else if (Armor != 0)
+                {
+                    Console.WriteLine("Выпил зелье которая уничтожела броню но увеличила наносимый урон");
+                    Damage += Armor / _absorbedArmorFactor;
+                    Armor = 0;
+                }
             }
+
+            _mana--;
         }
     }
 }
