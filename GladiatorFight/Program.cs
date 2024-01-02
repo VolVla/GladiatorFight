@@ -53,17 +53,17 @@ namespace GladiatorFights
 
         public void AnnounceWinner()
         {
-            if (_firstFighter.Health <= 0)
+            if (_firstFighter.Health <= 0 && _secondFighter.Health <= 0)
+            {
+                Console.WriteLine("Поздравляю бойцы убили друг друга, никто не победил и все проиграли");
+            }
+            else if (_firstFighter.Health <= 0)
             {
                 Console.WriteLine($"Победил {_secondFighter.Name} !");
             }
             else if (_secondFighter.Health <= 0)
             {
                 Console.WriteLine($"Победил {_firstFighter.Name} !");
-            }
-            else if (_firstFighter.Health <= 0 && _secondFighter.Health <= 0)
-            {
-                Console.WriteLine("Поздравляю бойцы убили друг друга, никто не победил и все проиграли");
             }
         }
 
@@ -100,16 +100,16 @@ namespace GladiatorFights
             Fighter fighter = null;
             ShowFighters();
             Console.Write("Введите номер бойца: ");
-            bool isNumber = int.TryParse(Console.ReadLine(), out int inputID);
+            bool isNumber = int.TryParse(Console.ReadLine(), out int inputId);
 
             if (isNumber == false)
             {
                 Console.WriteLine("Вы ввели не коректные данные.");
             }
-            else if (inputID > 0 && inputID - 1 < _fighters.Count)
+            else if (inputId > 0 && inputId <= _fighters.Count)
             {
                 Console.WriteLine("Боец успешно выбран.");
-                fighter = _fighters[inputID - 1].Clone();
+                fighter = _fighters[inputId - 1].Clone();
             }
 
             return fighter;
